@@ -29,8 +29,8 @@ export default function DashboardPage() {
   const [categoryData, setCategoryData] = useState<CategoryData[]>([])
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
 
-  const loadDashboardData = useCallback(() => {
-    const transactions = listTransactionsPastMonth()
+  const loadDashboardData = useCallback(async () => {
+    const transactions = await listTransactionsPastMonth()
     const categories = getCategories()
 
     // Group transactions by category
@@ -56,8 +56,8 @@ export default function DashboardPage() {
     loadDashboardData()
   }, [loadDashboardData])
 
-  const handleDeleteTransaction = (transactionId: string) => {
-    deleteTransaction(transactionId)
+  const handleDeleteTransaction = async (transactionId: string) => {
+    await deleteTransaction(transactionId)
     loadDashboardData()
   }
 

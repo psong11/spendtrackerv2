@@ -2,13 +2,12 @@ import { DEFAULT_BUDGET_CATEGORIES, type BudgetCategory } from "./budgetDefaults
 import type { Transaction, FundSource } from "./types"
 
 const KEYS = {
-  transactions: "transactions",
   categories: "categories",
   fundSources: "fundSources",
 } as const
 
 // ─────────────────────────────────────────────────────────────
-// Generic helpers
+// Generic helpers (for categories/fundSources only - still localStorage)
 // ─────────────────────────────────────────────────────────────
 
 function readJSON<T>(key: string, fallback: T): T {
@@ -74,47 +73,47 @@ export function getFundName(fundId: string): string {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Transactions
+// Transactions (Supabase via API)
 // ─────────────────────────────────────────────────────────────
 
-export function listTransactions(): Transaction[] {
-  return readJSON<Transaction[]>(KEYS.transactions, [])
-}
-
-export function listTransactionsPastMonth(): Transaction[] {
-  const all = listTransactions()
-  const now = new Date()
-  const monthAgo = new Date(now)
-  monthAgo.setMonth(monthAgo.getMonth() - 1)
-
-  return all
-    .filter((t) => {
-      const d = new Date(t.date)
-      return d >= monthAgo && d <= now
-    })
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-}
-
-export function addTransaction(tx: Omit<Transaction, "id" | "date">): Transaction {
-  const newTx: Transaction = {
-    ...tx,
-    id: crypto.randomUUID(),
-    date: new Date().toISOString(),
+export async function listTransactionsPastMonth(): Promise<Transaction[]> {
+  try {
+    const res = await fetch("/api/transactions", { cache: "no-store" })
+    if (!res.ok) return []
+    const { transactions } = await res.json()
+    return transactions ?? []
+  } catch {
+    return []
   }
-  const all = listTransactions()
-  all.push(newTx)
-  writeJSON(KEYS.transactions, all)
-  return newTx
 }
 
-export function deleteTransaction(id: string): void {
-  const all = listTransactions()
-  const updated = all.filter((t) => t.id !== id)
-  writeJSON(KEYS.transactions, updated)
+export async function addTransaction(
+  tx: Omit<Transaction, "id" | "date">
+): Promise<Transaction | null> {
+  try {
+    const res = await fetch("/api/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(tx),
+    })
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
+  }
 }
 
-export function getCategorySpending(categoryId: string): number {
-  const transactions = listTransactionsPastMonth()
+export async function deleteTransaction(id: string): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/transactions?id=${id}`, { method: "DELETE" })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
+export async function getCategorySpending(categoryId: string): Promise<number> {
+  const transactions = await listTransactionsPastMonth()
   return transactions
     .filter((t) => t.category === categoryId)
     .reduce((sum, t) => sum + t.amount, 0)

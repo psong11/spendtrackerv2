@@ -30,17 +30,22 @@ function ConfirmationContent() {
     }
     hasSaved.current = true
 
-    // Save transaction using storage helper
-    addTransaction({
-      fund,
-      amount: Number.parseFloat(amount),
-      category,
-    })
+    // Save transaction using storage helper (async)
+    const saveTransaction = async () => {
+      await addTransaction({
+        fund,
+        amount: Number.parseFloat(amount),
+        category,
+      })
 
-    // Get budget and spending for this category
-    setBudget(getCategoryBudget(category))
-    setSpending(getCategorySpending(category))
-    setIsAnimating(true)
+      // Get budget and spending for this category
+      setBudget(getCategoryBudget(category))
+      const spent = await getCategorySpending(category)
+      setSpending(spent)
+      setIsAnimating(true)
+    }
+
+    saveTransaction()
   }, [fund, amount, category, router])
 
   const percentSpent = budget > 0 ? Math.min((spending / budget) * 100, 100) : 0
