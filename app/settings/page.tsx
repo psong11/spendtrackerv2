@@ -1,20 +1,16 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
-import { ArrowLeft, Plus, Trash2, DollarSign } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, DollarSign, AlertTriangle, CheckCircle2 } from "lucide-react"
 import type { BudgetCategory } from "@/lib/budgetDefaults"
 import type { FundSource } from "@/lib/types"
-import {
-  getCategories,
-  setCategories as saveCategoriesToStorage,
-  getFundSources,
-  setFundSources as saveFundsToStorage,
-} from "@/lib/storage"
+import { getBudgetSettings, updateBudgetSettings } from "@/lib/storage"
 
 export default function SettingsPage() {
   const router = useRouter()
+  const [totalBudget, setTotalBudget] = useState(0)
   const [funds, setFunds] = useState<FundSource[]>([])
   const [categories, setCategories] = useState<BudgetCategory[]>([])
   const [showAddFund, setShowAddFund] = useState(false)
@@ -22,23 +18,43 @@ export default function SettingsPage() {
   const [newFundName, setNewFundName] = useState("")
   const [newCategoryName, setNewCategoryName] = useState("")
   const [newCategoryBudget, setNewCategoryBudget] = useState("")
+  const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    setFunds(getFundSources())
-    setCategories(getCategories())
+  const loadSettings = useCallback(async () => {
+    const settings = await getBudgetSettings()
+    setTotalBudget(settings.total_budget)
+    setCategories(settings.categories)
+    setFunds(settings.fund_sources)
+    setIsLoading(false)
   }, [])
 
-  const saveFunds = (newFunds: FundSource[]) => {
-    setFunds(newFunds)
-    saveFundsToStorage(newFunds)
+  useEffect(() => {
+    loadSettings()
+  }, [loadSettings])
+
+  // Calculate allocation status
+  const allocatedAmount = categories.reduce((sum, c) => sum + c.budget, 0)
+  const difference = totalBudget - allocatedAmount
+  const isExact = difference === 0
+  const isUnder = difference > 0
+  const isOver = difference < 0
+
+  const saveTotalBudget = async (newTotal: number) => {
+    setTotalBudget(newTotal)
+    await updateBudgetSettings({ total_budget: newTotal })
   }
 
-  const saveCategories = (newCategories: BudgetCategory[]) => {
+  const saveCategories = async (newCategories: BudgetCategory[]) => {
     setCategories(newCategories)
-    saveCategoriesToStorage(newCategories)
+    await updateBudgetSettings({ categories: newCategories })
   }
 
-  const handleAddFund = () => {
+  const saveFunds = async (newFunds: FundSource[]) => {
+    setFunds(newFunds)
+    await updateBudgetSettings({ fund_sources: newFunds })
+  }
+
+  const handleAddFund = async () => {
     if (!newFundName.trim()) return
 
     const newFund: FundSource = {
@@ -46,12 +62,12 @@ export default function SettingsPage() {
       name: newFundName,
     }
 
-    saveFunds([...funds, newFund])
+    await saveFunds([...funds, newFund])
     setNewFundName("")
     setShowAddFund(false)
   }
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (!newCategoryName.trim() || !newCategoryBudget) return
 
     const newCategory: BudgetCategory = {
@@ -60,30 +76,40 @@ export default function SettingsPage() {
       budget: Number.parseFloat(newCategoryBudget),
     }
 
-    saveCategories([...categories, newCategory])
+    await saveCategories([...categories, newCategory])
     setNewCategoryName("")
     setNewCategoryBudget("")
     setShowAddCategory(false)
   }
 
-  const handleDeleteFund = (id: string) => {
-    saveFunds(funds.filter((f) => f.id !== id))
+  const handleDeleteFund = async (id: string) => {
+    await saveFunds(funds.filter((f) => f.id !== id))
   }
 
-  const handleDeleteCategory = (id: string) => {
-    saveCategories(categories.filter((c) => c.id !== id))
+  const handleDeleteCategory = async (id: string) => {
+    await saveCategories(categories.filter((c) => c.id !== id))
   }
 
-  const handleUpdateBudget = (id: string, newBudget: string) => {
+  const handleUpdateBudget = async (id: string, newBudget: string) => {
     const budget = Number.parseFloat(newBudget)
     if (isNaN(budget)) return
 
     const updated = categories.map((c) => (c.id === id ? { ...c, budget } : c))
-    saveCategories(updated)
+    await saveCategories(updated)
+  }
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-background p-6">
+        <div className="mx-auto max-w-md">
+          <p className="text-muted-foreground">Loading settings...</p>
+        </div>
+      </main>
+    )
   }
 
   return (
-    <main className="min-h-screen bg-background p-6">
+    <main className="min-h-screen bg-background p-6 pb-24">
       <div className="mx-auto max-w-md space-y-6">
         <button
           onClick={() => router.back()}
@@ -95,9 +121,59 @@ export default function SettingsPage() {
 
         <div>
           <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-muted-foreground">Manage your funds and categories</p>
+          <p className="text-muted-foreground">Manage your budget, funds, and categories</p>
         </div>
 
+        {/* Total Budget */}
+        <Card className="p-4 space-y-3">
+          <h2 className="text-xl font-semibold">Total Monthly Budget</h2>
+          <div className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-muted-foreground" />
+            <input
+              type="number"
+              value={totalBudget}
+              onChange={(e) => {
+                const val = Number.parseFloat(e.target.value)
+                if (!isNaN(val)) saveTotalBudget(val)
+              }}
+              className="flex-1 p-3 bg-background border rounded-lg text-lg font-semibold"
+            />
+          </div>
+        </Card>
+
+        {/* Allocation Status */}
+        <Card className={`p-4 ${isExact ? "bg-green-500/10 border-green-500/30" : isUnder ? "bg-yellow-500/10 border-yellow-500/30" : "bg-red-500/10 border-red-500/30"}`}>
+          <div className="flex items-center gap-3">
+            {isExact ? (
+              <CheckCircle2 className="h-6 w-6 text-green-500 shrink-0" />
+            ) : (
+              <AlertTriangle className={`h-6 w-6 shrink-0 ${isUnder ? "text-yellow-500" : "text-red-500"}`} />
+            )}
+            <div>
+              {isExact && (
+                <p className="font-medium text-green-600">All ${totalBudget.toLocaleString()} allocated</p>
+              )}
+              {isUnder && (
+                <>
+                  <p className="font-medium text-yellow-600">${difference.toLocaleString()} left to allocate</p>
+                  <p className="text-sm text-muted-foreground">
+                    ${allocatedAmount.toLocaleString()} of ${totalBudget.toLocaleString()} assigned
+                  </p>
+                </>
+              )}
+              {isOver && (
+                <>
+                  <p className="font-medium text-red-600">${Math.abs(difference).toLocaleString()} over budget</p>
+                  <p className="text-sm text-muted-foreground">
+                    ${allocatedAmount.toLocaleString()} allocated, budget is ${totalBudget.toLocaleString()}
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        </Card>
+
+        {/* Fund Sources */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Fund Sources</h2>

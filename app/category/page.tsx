@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card } from "@/components/ui/card"
@@ -23,9 +23,10 @@ function CategoryContent() {
   const fund = searchParams.get("fund")
   const amount = searchParams.get("amount")
   const [categories, setCategories] = useState<CategoryDisplay[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    const savedCategories: BudgetCategory[] = getCategories()
+  const loadCategories = useCallback(async () => {
+    const savedCategories: BudgetCategory[] = await getCategories()
     const mapped: CategoryDisplay[] = savedCategories.map((cat) => {
       const meta = getCategoryMeta(cat.id)
       return {
@@ -36,10 +37,25 @@ function CategoryContent() {
       }
     })
     setCategories(mapped)
+    setIsLoading(false)
   }, [])
+
+  useEffect(() => {
+    loadCategories()
+  }, [loadCategories])
 
   const handleCategorySelect = (categoryId: string) => {
     router.push(`/confirmation?fund=${fund}&amount=${amount}&category=${categoryId}`)
+  }
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-background p-6">
+        <div className="mx-auto max-w-md">
+          <p className="text-muted-foreground text-center">Loading categories...</p>
+        </div>
+      </main>
+    )
   }
 
   return (

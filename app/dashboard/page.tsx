@@ -6,10 +6,10 @@ import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Settings, ChevronDown, ChevronUp, Trash2 } from "lucide-react"
 import { format } from "date-fns"
-import { TOTAL_MONTHLY_BUDGET, type BudgetCategory } from "@/lib/budgetDefaults"
+import { type BudgetCategory } from "@/lib/budgetDefaults"
 import { getCategoryMeta } from "@/lib/categoryMeta"
 import {
-  getCategories,
+  getBudgetSettings,
   listTransactionsPastMonth,
   deleteTransaction,
   getFundName,
@@ -27,14 +27,27 @@ interface CategoryData {
 export default function DashboardPage() {
   const router = useRouter()
   const [categoryData, setCategoryData] = useState<CategoryData[]>([])
+  const [totalBudget, setTotalBudget] = useState(0)
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
+  const [fundNames, setFundNames] = useState<Record<string, string>>({})
 
   const loadDashboardData = useCallback(async () => {
-    const transactions = await listTransactionsPastMonth()
-    const categories = getCategories()
+    const [transactions, settings] = await Promise.all([
+      listTransactionsPastMonth(),
+      getBudgetSettings(),
+    ])
+
+    setTotalBudget(settings.total_budget)
+
+    // Build fund name lookup
+    const fundLookup: Record<string, string> = {}
+    settings.fund_sources.forEach((f) => {
+      fundLookup[f.id] = f.name
+    })
+    setFundNames(fundLookup)
 
     // Group transactions by category
-    const grouped = categories.map((category: BudgetCategory) => {
+    const grouped = settings.categories.map((category: BudgetCategory) => {
       const categoryTransactions = transactions
         .filter((t) => t.category === category.id)
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -74,7 +87,6 @@ export default function DashboardPage() {
   }
 
   const totalSpent = categoryData.reduce((sum, cat) => sum + cat.spent, 0)
-  const totalBudget = TOTAL_MONTHLY_BUDGET
   const totalPercent = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0
 
   return (
@@ -157,7 +169,7 @@ export default function DashboardPage() {
                         >
                           <div>
                             <p className="text-sm font-medium">${transaction.amount.toFixed(2)}</p>
-                            <p className="text-xs text-muted-foreground">{getFundName(transaction.fund)}</p>
+                            <p className="text-xs text-muted-foreground">{fundNames[transaction.fund] || transaction.fund}</p>
                           </div>
                           <div className="flex items-center gap-3">
                             <p className="text-xs text-muted-foreground">

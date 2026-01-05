@@ -40,15 +40,14 @@ function ConfirmationContent() {
         category,
       })
 
-      // Get budget and spending for this category
-      // Add current transaction amount since DB query might have slight delay
-      const categoryBudget = getCategoryBudget(category)
-      const previousSpending = await getCategorySpending(category)
+      // Get budget and spending for this category (both are now async)
+      const [categoryBudget, currentSpending] = await Promise.all([
+        getCategoryBudget(category),
+        getCategorySpending(category),
+      ])
       
       setBudget(categoryBudget)
-      // The getCategorySpending should now include the new transaction,
-      // but we ensure it by using the fetched value directly
-      setSpending(previousSpending)
+      setSpending(currentSpending)
       setIsAnimating(true)
     }
 

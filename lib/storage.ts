@@ -1,53 +1,77 @@
-import { DEFAULT_BUDGET_CATEGORIES, type BudgetCategory } from "./budgetDefaults"
+import { DEFAULT_BUDGET_CATEGORIES, TOTAL_MONTHLY_BUDGET, type BudgetCategory } from "./budgetDefaults"
 import type { Transaction, FundSource } from "./types"
 
-const KEYS = {
-  categories: "categories",
-  fundSources: "fundSources",
-} as const
-
 // ─────────────────────────────────────────────────────────────
-// Generic helpers (for categories/fundSources only - still localStorage)
+// Budget Settings (Supabase via API)
 // ─────────────────────────────────────────────────────────────
 
-function readJSON<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback
+export interface BudgetSettings {
+  total_budget: number
+  categories: BudgetCategory[]
+  fund_sources: FundSource[]
+}
+
+export async function getBudgetSettings(): Promise<BudgetSettings> {
   try {
-    const raw = localStorage.getItem(key)
-    if (!raw) return fallback
-    const parsed = JSON.parse(raw)
-    return parsed as T
+    const res = await fetch("/api/budget", { cache: "no-store" })
+    if (!res.ok) throw new Error("Failed to fetch")
+    const data = await res.json()
+    return {
+      total_budget: Number(data.total_budget) || TOTAL_MONTHLY_BUDGET,
+      categories: data.categories || DEFAULT_BUDGET_CATEGORIES,
+      fund_sources: data.fund_sources || DEFAULT_FUND_SOURCES,
+    }
   } catch {
-    return fallback
+    return {
+      total_budget: TOTAL_MONTHLY_BUDGET,
+      categories: DEFAULT_BUDGET_CATEGORIES,
+      fund_sources: DEFAULT_FUND_SOURCES,
+    }
   }
 }
 
-function writeJSON<T>(key: string, value: T): void {
-  if (typeof window === "undefined") return
-  localStorage.setItem(key, JSON.stringify(value))
+export async function updateBudgetSettings(
+  settings: Partial<BudgetSettings>
+): Promise<BudgetSettings | null> {
+  try {
+    const res = await fetch("/api/budget", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(settings),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return {
+      total_budget: Number(data.total_budget),
+      categories: data.categories,
+      fund_sources: data.fund_sources,
+    }
+  } catch {
+    return null
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
-// Categories
+// Categories (convenience wrappers)
 // ─────────────────────────────────────────────────────────────
 
-export function getCategories(): BudgetCategory[] {
-  const saved = readJSON<BudgetCategory[]>(KEYS.categories, [])
-  return saved.length > 0 ? saved : DEFAULT_BUDGET_CATEGORIES
+export async function getCategories(): Promise<BudgetCategory[]> {
+  const settings = await getBudgetSettings()
+  return settings.categories
 }
 
-export function setCategories(categories: BudgetCategory[]): void {
-  writeJSON(KEYS.categories, categories)
+export async function setCategories(categories: BudgetCategory[]): Promise<void> {
+  await updateBudgetSettings({ categories })
 }
 
-export function getCategoryBudget(categoryId: string): number {
-  const categories = getCategories()
+export async function getCategoryBudget(categoryId: string): Promise<number> {
+  const categories = await getCategories()
   const found = categories.find((c) => c.id === categoryId)
   return found?.budget ?? 0
 }
 
 // ─────────────────────────────────────────────────────────────
-// Fund Sources
+// Fund Sources (Supabase via API)
 // ─────────────────────────────────────────────────────────────
 
 export const DEFAULT_FUND_SOURCES: FundSource[] = [
@@ -57,19 +81,28 @@ export const DEFAULT_FUND_SOURCES: FundSource[] = [
   { id: "discover", name: "Discover Credit Card" },
 ]
 
-export function getFundSources(): FundSource[] {
-  const saved = readJSON<FundSource[]>(KEYS.fundSources, [])
-  return saved.length > 0 ? saved : DEFAULT_FUND_SOURCES
+export async function getFundSources(): Promise<FundSource[]> {
+  const settings = await getBudgetSettings()
+  return settings.fund_sources
 }
 
-export function setFundSources(funds: FundSource[]): void {
-  writeJSON(KEYS.fundSources, funds)
+export async function setFundSources(funds: FundSource[]): Promise<void> {
+  await updateBudgetSettings({ fund_sources: funds })
 }
 
-export function getFundName(fundId: string): string {
-  const funds = getFundSources()
+export async function getFundName(fundId: string): Promise<string> {
+  const funds = await getFundSources()
   const found = funds.find((f) => f.id === fundId)
   return found?.name ?? fundId
+}
+
+// ─────────────────────────────────────────────────────────────
+// Total Budget
+// ─────────────────────────────────────────────────────────────
+
+export async function getTotalBudget(): Promise<number> {
+  const settings = await getBudgetSettings()
+  return settings.total_budget
 }
 
 // ─────────────────────────────────────────────────────────────

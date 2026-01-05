@@ -1,36 +1,59 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Card } from "@/components/ui/card"
 import { useRouter } from "next/navigation"
 import { CreditCard, Wallet } from "lucide-react"
+import { getFundSources } from "@/lib/storage"
+import type { FundSource } from "@/lib/types"
 
-const defaultFundSources = [
-  { id: "checking", name: "Checking Account", icon: Wallet, color: "bg-emerald-500" },
-  { id: "chase", name: "Chase Credit Card", icon: CreditCard, color: "bg-blue-500" },
-  { id: "bofa", name: "BofA Credit Card", icon: CreditCard, color: "bg-red-500" },
-  { id: "discover", name: "Discover Credit Card", icon: CreditCard, color: "bg-orange-500" },
+const fundColors = [
+  "bg-emerald-500",
+  "bg-blue-500",
+  "bg-red-500",
+  "bg-orange-500",
+  "bg-purple-500",
+  "bg-pink-500",
+  "bg-teal-500",
 ]
+
+interface DisplayFund extends FundSource {
+  icon: typeof CreditCard | typeof Wallet
+  color: string
+}
 
 export default function Home() {
   const router = useRouter()
-  const [fundSources, setFundSources] = useState(defaultFundSources)
+  const [fundSources, setFundSources] = useState<DisplayFund[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  const loadFunds = useCallback(async () => {
+    const funds = await getFundSources()
+    const mapped: DisplayFund[] = funds.map((fund, index) => ({
+      ...fund,
+      icon: fund.id === "checking" ? Wallet : CreditCard,
+      color: fundColors[index % fundColors.length],
+    }))
+    setFundSources(mapped)
+    setIsLoading(false)
+  }, [])
 
   useEffect(() => {
-    const saved = localStorage.getItem("fundSources")
-    if (saved) {
-      const customFunds = JSON.parse(saved)
-      const mapped = customFunds.map((fund: any, index: number) => ({
-        ...fund,
-        icon: CreditCard,
-        color: defaultFundSources[index % defaultFundSources.length]?.color || "bg-blue-500",
-      }))
-      setFundSources(mapped)
-    }
-  }, [])
+    loadFunds()
+  }, [loadFunds])
 
   const handleFundSelect = (fundId: string) => {
     router.push(`/amount?fund=${fundId}`)
+  }
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-background p-6">
+        <div className="mx-auto max-w-md">
+          <p className="text-muted-foreground text-center">Loading...</p>
+        </div>
+      </main>
+    )
   }
 
   return (
