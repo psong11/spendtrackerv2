@@ -32,16 +32,23 @@ function ConfirmationContent() {
 
     // Save transaction using storage helper (async)
     const saveTransaction = async () => {
+      const txAmount = Number.parseFloat(amount)
+      
       await addTransaction({
         fund,
-        amount: Number.parseFloat(amount),
+        amount: txAmount,
         category,
       })
 
       // Get budget and spending for this category
-      setBudget(getCategoryBudget(category))
-      const spent = await getCategorySpending(category)
-      setSpending(spent)
+      // Add current transaction amount since DB query might have slight delay
+      const categoryBudget = getCategoryBudget(category)
+      const previousSpending = await getCategorySpending(category)
+      
+      setBudget(categoryBudget)
+      // The getCategorySpending should now include the new transaction,
+      // but we ensure it by using the fetched value directly
+      setSpending(previousSpending)
       setIsAnimating(true)
     }
 

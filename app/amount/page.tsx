@@ -31,8 +31,8 @@ function AmountContent() {
   }
 
   return (
-    <main className="min-h-screen bg-background p-6">
-      <div className="mx-auto max-w-md space-y-8">
+    <main className="min-h-screen bg-background p-4">
+      <div className="mx-auto max-w-md space-y-4">
         <button
           onClick={() => router.back()}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
@@ -41,18 +41,18 @@ function AmountContent() {
           Back
         </button>
 
-        <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold">Enter Amount</h1>
-          <p className="text-muted-foreground capitalize">{fund?.replace("-", " ")}</p>
+        <div className="text-center space-y-1">
+          <h1 className="text-xl font-bold">Enter Amount</h1>
+          <p className="text-sm text-muted-foreground capitalize">{fund?.replace("-", " ")}</p>
         </div>
 
-        <Card className="p-8">
-          <div className="text-center space-y-4">
-            <div className="text-5xl font-bold text-primary">${amount || "0.00"}</div>
+        <Card className="p-4">
+          <div className="text-center">
+            <div className="text-4xl font-bold text-primary">${amount || "0.00"}</div>
           </div>
         </Card>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2">
           {["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "←"].map((btn) => (
             <button
               key={btn}
@@ -60,24 +60,24 @@ function AmountContent() {
                 if (btn === "←") handleDelete()
                 else handleNumberClick(btn)
               }}
-              className="p-6 bg-card hover:bg-accent rounded-xl text-2xl font-semibold transition-colors"
+              className="p-5 bg-card hover:bg-accent rounded-xl text-2xl font-semibold transition-colors"
             >
               {btn}
             </button>
           ))}
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <button
             onClick={handleClear}
-            className="flex-1 p-4 bg-card hover:bg-accent rounded-xl font-medium transition-colors"
+            className="flex-1 p-3 bg-card hover:bg-accent rounded-xl font-medium transition-colors"
           >
             Clear
           </button>
           <button
             onClick={handleContinue}
             disabled={!amount || Number.parseFloat(amount) === 0}
-            className="flex-1 p-4 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 p-3 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Continue
           </button>
