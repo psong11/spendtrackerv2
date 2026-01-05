@@ -119,15 +119,15 @@ export default function DashboardPage() {
                   onClick={() => toggleExpand(data.category)}
                   className="w-full p-6 space-y-3 text-left hover:bg-accent/50 transition-colors"
                 >
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      <div className={`${categoryColor} p-2 rounded-lg`}>
+                  <div className="flex justify-between items-center gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`${categoryColor} p-2 rounded-lg shrink-0`}>
                         <Icon className="h-4 w-4 text-white" />
                       </div>
-                      <h3 className="font-semibold">{data.name}</h3>
+                      <h3 className="font-semibold truncate">{data.name}</h3>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-sm text-muted-foreground whitespace-nowrap">
                         ${data.spent.toFixed(2)} / ${data.budget}
                       </span>
                       {isExpanded ? (
