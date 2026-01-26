@@ -123,13 +123,13 @@ export function BudgetPieChart({ categories, totalBudget, categoryMeta }: Budget
   }
 
   return (
-    <div className="w-full py-2">
-      <ResponsiveContainer width="100%" height={280}>
-        <PieChart margin={{ top: 20, right: 0, bottom: 0, left: 0 }}>
+    <div className="w-full">
+      <ResponsiveContainer width="100%" height={300}>
+        <PieChart margin={{ top: 35, right: 0, bottom: 0, left: 0 }}>
           <Pie
             data={chartData}
             cx="50%"
-            cy="40%"
+            cy="38%"
             innerRadius={55}
             outerRadius={85}
             paddingAngle={2}

@@ -243,8 +243,8 @@ export default function SettingsPage() {
           </div>
 
           {/* Budget Distribution Pie Chart */}
-          <Card className="p-4">
-            <h3 className="text-sm font-medium text-muted-foreground mb-2 text-center">Budget Distribution</h3>
+          <Card className="p-4 pb-2">
+            <h3 className="text-sm font-medium text-muted-foreground text-center">Budget Distribution</h3>
             <BudgetPieChart 
               categories={categories}
               totalBudget={totalBudget}
