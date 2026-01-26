@@ -121,9 +121,27 @@ export default function DashboardPage() {
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">Categories</h2>
           {categoryData.map((data) => {
-            const percentSpent = data.budget > 0 ? Math.min((data.spent / data.budget) * 100, 100) : 0
+            const isOverBudget = data.spent > data.budget
             const isExpanded = expandedCategories.has(data.category)
             const { color: categoryColor, icon: Icon } = getCategoryMeta(data.category)
+            
+            // Calculate percentages for the progress bar
+            let budgetPercent: number
+            let overshootPercent: number
+            
+            if (data.budget <= 0) {
+              budgetPercent = 0
+              overshootPercent = 0
+            } else if (isOverBudget) {
+              // When over budget: show budget portion + overshoot portion
+              // Scale so that total spent = 100%
+              budgetPercent = (data.budget / data.spent) * 100
+              overshootPercent = 100 - budgetPercent
+            } else {
+              // Under budget: just show spent portion
+              budgetPercent = (data.spent / data.budget) * 100
+              overshootPercent = 0
+            }
 
             return (
               <Card key={data.category} className="overflow-hidden">
@@ -139,7 +157,7 @@ export default function DashboardPage() {
                       <h3 className="font-semibold truncate">{data.name}</h3>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-sm text-muted-foreground whitespace-nowrap">
+                      <span className={`text-sm whitespace-nowrap ${isOverBudget ? "text-red-500 font-medium" : "text-muted-foreground"}`}>
                         ${data.spent.toFixed(2)} / ${data.budget}
                       </span>
                       {isExpanded ? (
@@ -150,12 +168,25 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
+                    {/* Budget portion (solid color) */}
                     <div
-                      className={`h-full ${categoryColor} transition-all duration-300`}
-                      style={{ width: `${percentSpent}%` }}
+                      className={`absolute left-0 top-0 h-full ${categoryColor} transition-all duration-300`}
+                      style={{ width: `${budgetPercent}%` }}
                     />
+                    {/* Overshoot portion (faded color) */}
+                    {isOverBudget && (
+                      <div
+                        className={`absolute top-0 h-full ${categoryColor} opacity-40 transition-all duration-300`}
+                        style={{ left: `${budgetPercent}%`, width: `${overshootPercent}%` }}
+                      />
+                    )}
                   </div>
-                  <p className="text-xs text-muted-foreground">{percentSpent.toFixed(0)}% used</p>
+                  <p className={`text-xs ${isOverBudget ? "text-red-500" : "text-muted-foreground"}`}>
+                    {isOverBudget 
+                      ? `${((data.spent / data.budget) * 100).toFixed(0)}% used — $${(data.spent - data.budget).toFixed(2)} over budget`
+                      : `${((data.spent / data.budget) * 100).toFixed(0)}% used`
+                    }
+                  </p>
                 </button>
 
                 {isExpanded && data.transactions.length > 0 && (
