@@ -4,9 +4,19 @@ import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { BudgetPieChart } from "@/components/ui/budget-pie-chart"
-import { ArrowLeft, Plus, Trash2, DollarSign, AlertTriangle, CheckCircle2 } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, DollarSign, AlertTriangle, CheckCircle2, CreditCard, Wallet } from "lucide-react"
 import type { BudgetCategory } from "@/lib/budgetDefaults"
 import type { FundSource } from "@/lib/types"
+
+const fundColors = [
+  "bg-emerald-500",
+  "bg-blue-500",
+  "bg-red-500",
+  "bg-orange-500",
+  "bg-purple-500",
+  "bg-pink-500",
+  "bg-teal-500",
+]
 import { getBudgetSettings, updateBudgetSettings } from "@/lib/storage"
 import { CATEGORY_META } from "@/lib/categoryMeta"
 
@@ -217,17 +227,26 @@ export default function SettingsPage() {
           )}
 
           <div className="space-y-2">
-            {funds.map((fund) => (
-              <Card key={fund.id} className="p-4 flex justify-between items-center">
-                <span className="font-medium">{fund.name}</span>
-                <button
-                  onClick={() => handleDeleteFund(fund.id)}
-                  className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                >
-                  <Trash2 className="h-5 w-5" />
-                </button>
-              </Card>
-            ))}
+            {funds.map((fund, index) => {
+              const Icon = fund.id === "checking" ? Wallet : CreditCard
+              const color = fundColors[index % fundColors.length]
+              return (
+                <Card key={fund.id} className="p-4 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className={`${color} p-2 rounded-lg`}>
+                      <Icon className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="font-medium">{fund.name}</span>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteFund(fund.id)}
+                    className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
+                </Card>
+              )
+            })}
           </div>
         </div>
 
