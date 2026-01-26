@@ -231,16 +231,16 @@ export default function SettingsPage() {
               const Icon = fund.id === "checking" ? Wallet : CreditCard
               const color = fundColors[index % fundColors.length]
               return (
-                <Card key={fund.id} className="p-4 flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className={`${color} p-2 rounded-lg`}>
+                <Card key={fund.id} className="p-4 flex flex-row justify-between items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`${color} p-2 rounded-lg shrink-0`}>
                       <Icon className="h-5 w-5 text-white" />
                     </div>
-                    <span className="font-medium">{fund.name}</span>
+                    <span className="font-medium truncate">{fund.name}</span>
                   </div>
                   <button
                     onClick={() => handleDeleteFund(fund.id)}
-                    className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                    className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors shrink-0"
                   >
                     <Trash2 className="h-5 w-5" />
                   </button>
