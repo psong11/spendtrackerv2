@@ -3,10 +3,12 @@
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
+import { BudgetPieChart } from "@/components/ui/budget-pie-chart"
 import { ArrowLeft, Plus, Trash2, DollarSign, AlertTriangle, CheckCircle2 } from "lucide-react"
 import type { BudgetCategory } from "@/lib/budgetDefaults"
 import type { FundSource } from "@/lib/types"
 import { getBudgetSettings, updateBudgetSettings } from "@/lib/storage"
+import { CATEGORY_META } from "@/lib/categoryMeta"
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -239,6 +241,16 @@ export default function SettingsPage() {
               <Plus className="h-5 w-5" />
             </button>
           </div>
+
+          {/* Budget Distribution Pie Chart */}
+          <Card className="p-4">
+            <h3 className="text-sm font-medium text-muted-foreground mb-2 text-center">Budget Distribution</h3>
+            <BudgetPieChart 
+              categories={categories}
+              totalBudget={totalBudget}
+              categoryMeta={CATEGORY_META}
+            />
+          </Card>
 
           {showAddCategory && (
             <Card className="p-4 space-y-3">
